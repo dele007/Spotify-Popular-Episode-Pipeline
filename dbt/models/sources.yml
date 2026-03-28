@@ -4,11 +4,16 @@ sources:
   - name: podcast_episodes
     database: spotify-episode-pipeline
     schema: podcast_episodes
+    description: "Raw episode chart data loaded from Spotify top podcasts Kaggle dataset"
     tables:
       - name: raw_episodes
+        description: "Daily top 200 podcast episodes by region from Spotify charts"
 
   - name: podcast_shows
     database: spotify-episode-pipeline
     schema: podcast_shows
+    description: "Show metadata enriched from iTunes API"
     tables:
       - name: raw_shows
+        description: "Podcast show metadata including genre information from iTunes"
+      
