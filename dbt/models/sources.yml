@@ -1,0 +1,14 @@
+version: 2
+
+sources:
+  - name: podcast_episodes
+    database: spotify-episode-pipeline
+    schema: podcast_episodes
+    tables:
+      - name: raw_episodes
+
+  - name: podcast_shows
+    database: spotify-episode-pipeline
+    schema: podcast_shows
+    tables:
+      - name: raw_shows
