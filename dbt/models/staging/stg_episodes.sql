@@ -40,4 +40,9 @@ WHEN region LIKE 'us' THEN 'United States'
 END as region_expanded
 
 FROM {{ source('podcast_episodes', 'raw_episodes') }}
-WHERE languages LIKE '%en%'
+WHERE languages LIKE '%en%' AND show_name IS NOT NULL
+
+# Take out a random episode that was still sticking around.
+
+AND NOT(date = '2026-02-24' AND rank = 176	
+AND region = 'ca' AND episodeName LIKE	'%r/Offmychest I Was Forced into a Poly Marriage%')
