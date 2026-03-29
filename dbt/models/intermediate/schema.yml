@@ -44,7 +44,7 @@ models:
         tests:
           - not_null
           - unique
-      - name: avg_best_rank
+      - name: avg_rank
         description: "Average of each episode's best chart position — lower is better"
         tests:
           - not_null

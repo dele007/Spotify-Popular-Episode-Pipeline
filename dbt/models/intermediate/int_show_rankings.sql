@@ -17,3 +17,4 @@ ROUND( COUNT(episode_name) / MAX(total_episodes), 4) AS ranked_episode_rate
 FROM {{ref("stg_shows")}} s
 LEFT JOIN best_rank b  ON b.show_name = s.show_name
 GROUP BY s.show_name, s.primary_genre, s.all_genres, s.genre_ids, s.publisher
+HAVING AVG(b.best_rank) IS NOT NULL
