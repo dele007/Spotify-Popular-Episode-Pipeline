@@ -16,3 +16,4 @@ s.primary_genre,
 s.all_genres
 FROM episodes
 LEFT JOIN {{ref("stg_shows")}} s ON s.show_name = episodes.show_name
+WHERE episodes.show_name IS NOT NULL
