@@ -26,6 +26,8 @@ models:
           - not_null
       - name: show_name
         description: "Name of the podcast"
+        tests:
+          - not_null
       - name: duration_ms
         description: "Episode duration in milliseconds"
       - name: duration_minutes
