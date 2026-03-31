@@ -3,7 +3,8 @@
 *.json 
 *.csv
 
-gcloud/
+
+*test.py
 
 # Other stuff
 *.pyc

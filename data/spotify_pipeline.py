@@ -134,6 +134,7 @@ def enrich_shows(show_list, existing_shows_df=None, batch_size=100):
     upload_list = list(existing_shows_df.to_dict('records')) if existing_shows_df is not None else []
     success_count = 0
     skip_count = 0
+    fail_count = 0
     
     # break show_list into chunks of batch_size
     chunks = [show_list[i:i + batch_size] for i in range(0, len(show_list), batch_size)]
@@ -143,28 +144,44 @@ def enrich_shows(show_list, existing_shows_df=None, batch_size=100):
         print(f"\nStarting chunk {chunk_num + 1}/{len(chunks)}")
         
         for i, show_name in enumerate(chunk):
-            # step 1 - clean the title
+            # step 1 - check to makes sure the show name is a valid string before trying to clean it or call the API
+            if not isinstance(show_name, str) or pd.isna(show_name):
+                skip_count += 1
+                continue
+            # step 2 - clean the title
             cleaned_name = clean_show_name(show_name)
             
-            # step 2 - hit iTunes API with retry logic
+            # step 3 - hit iTunes API with retry logic
+            max_retries = 3
+            retries = 0
+
             while True:
                 result = get_itunes_info(cleaned_name)
-                if isinstance(result, dict):
-                    # store original show_name so it joins back to episodes
+                if isinstance(result, dict) and result.get('itunes_found'):
                     result['show_name'] = show_name
                     upload_list.append(result)
                     success_count += 1
                     print(f"✓ Enriched: {show_name}")
                     break
                 elif result == '429':
-                    print(f"Rate limited, waiting 5 seconds...")
-                    time.sleep(5)
+                    retries += 1
+                    if retries > max_retries:
+                        print(f"❌ Max retries exceeded for {show_name}")
+                        skip_count += 1
+                        break
+
+                    print(f"Rate limited, waiting 30 seconds... (Attempt {retries}/{max_retries})")
+                    time.sleep(30)
+
+                elif isinstance(result, dict) and result.get('itunes_found') is False:
+                    fail_count += 1
+                    break
                 else:
                     skip_count += 1
                     break
             
             if i % 10 == 0:
-                print(f"Chunk progress: {i}/{len(chunk)} | Total success: {success_count} | Skipped: {skip_count}")
+                print(f"Chunk progress: {i}/{len(chunk)} | Total success: {success_count} | Skipped: {skip_count}  | Not Found: {fail_count}")
         
         # upload after each chunk
         combined_df = pd.DataFrame(upload_list)
@@ -176,7 +193,7 @@ def enrich_shows(show_list, existing_shows_df=None, batch_size=100):
             print(f"Waiting 60 seconds before next chunk...")
             time.sleep(60)
     
-    print(f"\nAll chunks complete — Success: {success_count} | Skipped: {skip_count}")
+    print(f"\nAll chunks complete — Success: {success_count} | Skipped: {skip_count} | Not Found: {fail_count}")
     return pd.DataFrame(upload_list)
 
 def load_episodes_from_gcs():
@@ -194,7 +211,7 @@ def main():
     upload_episodes_to_gcs(result)
 
     # store episodes data frame
-    episodes_df = pd.read_csv(result)
+    episodes_df = load_episodes_from_gcs()
     
     # get existing shows
     existing_shows_df = get_existing_shows()
