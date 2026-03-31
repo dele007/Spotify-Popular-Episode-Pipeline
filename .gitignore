@@ -3,6 +3,8 @@
 *.json 
 *.csv
 
+gcloud/
+
 # Other stuff
 *.pyc
 /tmp/
