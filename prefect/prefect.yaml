@@ -24,6 +24,7 @@ pull:
 
 # the deployments section allows you to provide configuration
 # for deploying flows
+# built in terminal with prefect deploy command
 deployments:
 - name: weekly-podcast-refresh
   version: null
