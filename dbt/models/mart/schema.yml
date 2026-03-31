@@ -1,0 +1,70 @@
+version: 2
+
+models:
+  - name: mart_show_rankings
+    description: >
+      Business ready podcast rankings table for dashboard consumption.
+      Surfaces the most popular podcasts based on average best chart
+      position across all their charting episodes. Ordered by average rank
+      ascending so the most popular shows appear first.
+      One row per unique podcast show.
+    columns:
+      - name: show_name
+        description: "Name of the podcast"
+        tests:
+          - not_null
+          - unique
+      - name: avg_rank
+        description: "Average of each episode's best chart position — lower is better"
+        tests:
+          - not_null
+      - name: ranked_episodes
+        description: "Number of episodes from this show that appeared in the top 200"
+        tests:
+          - not_null
+      - name: total_episodes
+        description: "Total episodes published by the show"
+      - name: ranked_episode_rate
+        description: "Ratio of ranked to total episodes — shown as decimal for percentage conversion"
+      - name: primary_genre
+        description: "Primary genre from iTunes taxonomy"
+      - name: all_genres
+        description: "Full comma separated genre list for flexible filtering"
+      - name: publisher
+        description: "Publisher or creator of the podcast"
+
+  - name: mart_recent_episodes
+    description: >
+      Business ready recent episodes table for dashboard consumption.
+      Shows the best performing episodes ordered by most recently released.
+      One row per unique episode showing its peak chart performance,
+      how many days it charted, and formatted duration for display.
+    columns:
+      - name: episode_name
+        description: "Name of the podcast episode"
+        tests:
+          - not_null
+      - name: show_name
+        description: "Name of the podcast"
+        tests:
+          - not_null
+      - name: primary_genre
+        description: "Primary genre of the show for filtering"
+      - name: release_date
+        description: "Date the episode was originally published"
+        tests:
+          - not_null
+      - name: best_rank
+        description: "Best chart position the episode achieved"
+        tests:
+          - not_null
+      - name: days_charted
+        description: "Number of days the episode appeared in the top 200"
+        tests:
+          - not_null
+      - name: duration_ms
+        description: "Episode duration in milliseconds for Looker Studio time formatting"
+      - name: duration_minutes
+        description: "Episode duration in whole minutes"
+      - name: duration_formatted
+        description: "Episode duration in HH:MM:SS format"

@@ -1,0 +1,57 @@
+version: 2
+
+
+models:
+  - name: stg_episodes
+    description: >
+      Cleaned and standardized episode chart data from Spotify daily top 200.
+      Filters for English language podcasts only and renames columns for consistency.
+      One row per episode per region per collection date.
+    columns:
+      - name: collection_date
+        description: "Date the chart position was recorded"
+        tests:
+          - not_null
+      - name: daily_rank
+        description: "Chart position for the episode on the collection date (1-200)"
+        tests:
+          - not_null
+      - name: region
+        description: "Market/country the chart position applies to"
+        tests:
+          - not_null
+      - name: episode_name
+        description: "Name of the individual podcast episode"
+        tests:
+          - not_null
+      - name: show_name
+        description: "Name of the podcast"
+        tests:
+          - not_null
+      - name: duration_ms
+        description: "Episode duration in milliseconds"
+      - name: duration_minutes
+        description: "Episode duration in whole minutes"
+      - name: release_date
+        description: "Date the episode was originally published"
+      - name: languages
+        description: "Language tags for the episode"
+
+  - name: stg_shows
+    description: >
+      Cleaned show metadata enriched from iTunes API.
+      One row per unique podcast with genre and publisher information.
+    columns:
+      - name: show_name
+        description: "Name of the podcast"
+        tests:
+          - not_null
+          - unique
+      - name: primary_genre
+        description: "Primary genre classification from iTunes taxonomy"
+      - name: all_genres
+        description: "Comma separated list of all genre tags from iTunes"
+      - name: genre_ids
+        description: "Comma separated list of iTunes genre IDs"
+      - name: publisher
+        description: "Publisher or creator of the podcast"
