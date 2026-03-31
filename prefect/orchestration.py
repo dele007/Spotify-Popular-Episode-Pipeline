@@ -1,5 +1,4 @@
 from prefect import task, flow
-from prefect.schedules.schedules import CronSchedule
 
 
 import sys
@@ -9,10 +8,6 @@ from spotify_pipeline import download_from_kaggle, upload_episodes_to_gcs, get_e
 from gcs_to_bq import BUCKET_NAME, EPISODES_GCS_PATH, EPISODES_DATASET, EPISODES_TABLE, SHOWS_GCS_PATH, SHOWS_DATASET, SHOWS_TABLE, load_to_bigquery
 
 import os
-
-
-# Run the flow every Monday at 12:00 AM
-weekly_schedule = CronSchedule(cron="0 0 * * 1")
 
 KAGGLE_API_TOKEN = os.getenv("KAGGLE_API_TOKEN")
 if not KAGGLE_API_TOKEN:
@@ -50,11 +45,11 @@ def load_to_bq():
         SHOWS_TABLE
     )
 
-@flow(name="Spotify Podcast Pipeline", schedule=weekly_schedule)
+@flow(name="Spotify Podcast Pipeline")
 def spotify_pipeline_flow():
     ingest_episodes()
     enrich_show_data()
     load_to_bq()
 
 if __name__ == "__main__":
-    spotify_pipeline_flow()
+    spotify_pipeline_flow() 
