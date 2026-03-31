@@ -33,7 +33,7 @@ models:
       - name: publisher
         description: "Publisher or creator of the podcast"
 
-  - name: mart_recent_episodes
+  - name: mart_episode_performance
     description: >
       Business ready recent episodes table for dashboard consumption.
       Shows the best performing episodes ordered by most recently released.

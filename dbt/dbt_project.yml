@@ -41,7 +41,7 @@ models:
       +materialized: view
     intermediate:
       +materialized: view
-    marts:
+    mart:
       +materialized: table
       +schema: podcast_transformed
 
