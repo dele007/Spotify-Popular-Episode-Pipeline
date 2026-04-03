@@ -164,6 +164,7 @@ dbt test
 
 ## Project Structure
 
+```
 spotify-podcast-pipeline/
 ├── terraform/
 │   ├── main.tf
