@@ -160,11 +160,10 @@ prefect deploy (Follow the prompts)
 cd dbt
 dbt run
 dbt test
-
+```
 
 ## Project Structure
 
-```
 spotify-podcast-pipeline/
 ├── terraform/
 │   ├── main.tf
