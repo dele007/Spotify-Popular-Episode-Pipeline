@@ -20,8 +20,8 @@ def download_from_kaggle():
   return full_path
 
 
-PROJECT_ID = "spotify-episode-pipeline"
-BUCKET_NAME = "spotify_podcast_bucket"
+PROJECT_ID = os.environ.get("PROJECT_ID")
+BUCKET_NAME = os.environ.get("BUCKET_NAME")
 EPISODES_GCS_PATH = "raw/episodes/top_podcasts.csv"
 SHOWS_GCS_PATH = "raw/shows/shows.csv"
 
