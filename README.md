@@ -63,7 +63,7 @@ podcast_episodes    podcast_shows
 5. Hits iTunes Search API for genre metadata on new shows
 6. Uploads enriched show data to GCS under `raw/shows/`
 
-### Loading (`data/load_to_bigquery.py`)
+### Loading (`data/gcs_to_bq.py`)
 1. Loads episodes CSV from GCS to BigQuery
    - Partitioned by `date` for efficient date range queries
    - Clustered by `region` and `show_name` for fast filtering
@@ -108,7 +108,7 @@ Built in Looker Studio connecting directly to BigQuery mart tables.
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/dele007/spotify-podcast-pipeline.git
+git clone https://github.com/dele007/Spotify-Popular-Episode-Pipeline.git
 cd spotify-podcast-pipeline
 ```
 
@@ -124,8 +124,9 @@ gcloud auth application-default login
 
 ### 4. Set environment variables
 ```bash
-export KAGGLE_API_TOKEN="your-kaggle-api-key"
+export KAGGLE_API_TOKEN="your-kaggle-api-key" (will need to export a key from Kaggle after creating an account)
 export PROJECT_ID="your-gcp-project-id"
+export BUCKET_NAME="your-bucket-name"
 ```
 
 ### 5. Provision infrastructure
@@ -158,9 +159,11 @@ prefect deploy (Follow the prompts)
 **Or if you have dbt Core installed:**
 ```bash
 cd dbt
+dbr init
 dbt run
 dbt test
 ```
+It's possible I left things out through this method since I went the Cloud route.
 
 ## Project Structure
 
