@@ -5,13 +5,13 @@ region,
 episodeName AS episode_name,
 description AS episode_description,
 show_name,
-show_description,
+-- show_description,
 show_publisher,
 duration_ms,
 ROUND(duration_ms / 60000.0, 0) as duration_minutes,
 languages,
 release_date,
-release_date_precision,
+-- release_date_precision,
 show_media_type,
 show_total_episodes,
 CASE 
@@ -38,6 +38,7 @@ WHEN region LIKE 'nl' THEN 'Netherlands'
 WHEN region LIKE 'gb' THEN 'United Kingdom'
 WHEN region LIKE 'us' THEN 'United States'
 END as region_expanded
+
 
 FROM {{ source('podcast_episodes', 'raw_episodes') }}
 WHERE languages LIKE '%en%' AND show_name IS NOT NULL
