@@ -7,8 +7,8 @@ discovery process. Any bad selections after that point is fully on me.
 
 The dashboard answers two questions:
 - **What are the most popular podcasts right now?** Ranked by average chart performance across all their episodes and
-percentage of episodes that have made the Top 200 chart.
-- **Which recent episodes are worth listening to?** Filtered by genre, country/region, and show with episode duration and chart performance context.
+number of episodes that have made the Top 200 chart.
+- **Which episodes of a podcast are worth listening to if you're listening to it for the first time?** Sorted by top chart ranking and filtered by genre, country/region, and show with episode duration.
 
 ## Architecture
 
@@ -42,7 +42,7 @@ podcast_episodes    podcast_shows
 | Data Lake | Google Cloud Storage |
 | Data Warehouse | BigQuery |
 | Ingestion & Enrichment | Python |
-| Orchestration | Kestra |
+| Orchestration | Prefect |
 | Transformation | dbt Cloud |
 | Dashboard | Looker Studio |
 
@@ -63,7 +63,7 @@ podcast_episodes    podcast_shows
 5. Hits iTunes Search API for genre metadata on new shows
 6. Uploads enriched show data to GCS under `raw/shows/`
 
-### Loading (`data/load_to_bigquery.py`)
+### Loading (`data/gcs_to_bq.py`)
 1. Loads episodes CSV from GCS to BigQuery
    - Partitioned by `date` for efficient date range queries
    - Clustered by `region` and `show_name` for fast filtering
@@ -72,21 +72,21 @@ podcast_episodes    podcast_shows
 ### Transformation (dbt)
 See [dbt/README.md](dbt/README.md) for full model documentation.
 
-### Orchestration (Kaggle)
+### Orchestration (Prefect & dbt)
 Pipeline runs on a weekly schedule. Each run:
 - Downloads latest Kaggle data
 - Enriches any new shows via iTunes API
 - Loads to BigQuery
-- Triggers dbt run
+- Triggers dbt build an hour after the data gets loaded into BigQuery
 
 ## Dashboard
 
 Built in Looker Studio connecting directly to BigQuery mart tables.
 
 **Tile 1 — Most Popular Shows**
-- Shows ranked by average best chart position and ranked episode rate
+- Shows ranked by average best chart position and ranked episodes since September 2024
 - Filterable by genre and region
-- Ranked episode rate as a quality signal to give context 
+- Ranked episode total acts as as a quality signal and rewards podcasts that have episodes chart frequently 
 
 **Tile 2 — Most Popular Episodes**
 - Episodes ordered by release date (latest to earliest)
@@ -94,6 +94,7 @@ Built in Looker Studio connecting directly to BigQuery mart tables.
 - Filterable by show and genre
 - Includes episode duration
 - Includes countries where popular episdoes have reached the Top 200 daily rank
+- Timeline of chart placement during selected timespan
 
 ## Setup
 
@@ -103,10 +104,11 @@ Built in Looker Studio connecting directly to BigQuery mart tables.
 - Python 3.11+ (I setup all of this on 3.14.2, but should be fine with previous versions)
 - dbt Cloud account (Maybe Core is okay, I set mine up on Cloud)
 - Kaggle account with API token
+- Prefect Cloud account
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/dele007/spotify-podcast-pipeline.git
+git clone https://github.com/dele007/Spotify-Popular-Episode-Pipeline.git
 cd spotify-podcast-pipeline
 ```
 
@@ -115,15 +117,19 @@ cd spotify-podcast-pipeline
 pip install -r requirements.txt
 ```
 
-### 3. Set environment variables
+### 3. Authenticate with GCP
 ```bash
-export GOOGLE_APPLICATION_CREDENTIALS="credentials/your-key.json"
-export KAGGLE_API_TOKEN="your-kaggle-api-key"
-export GCS_BUCKET_NAME="your-bucket-name"
-export PROJECT_ID="your-gcp-project-id"
+gcloud auth application-default login
 ```
 
-### 4. Provision infrastructure
+### 4. Set environment variables
+```bash
+export KAGGLE_API_TOKEN="your-kaggle-api-key" (will need to export a key from Kaggle after creating an account)
+export PROJECT_ID="your-gcp-project-id"
+export BUCKET_NAME="your-bucket-name"
+```
+
+### 5. Provision infrastructure
 ```bash
 cd terraform
 terraform init
@@ -131,18 +137,33 @@ terraform plan
 terraform apply
 ```
 
-### 5. Run the pipeline
+### 6. Run the pipeline manually
 ```bash
-python data/spotify_pipeline.py
-python data/gcs_to_bq.py
+python prefect/orchestration.py
+```
+### 7. Deploy schedule with Prefect
+```bash
+prefect cloud login
+prefect deploy (Follow the prompts)
 ```
 
-### 6. Run dbt transformations
+### 8. Run dbt transformations
+**Manually via dbt Cloud**
+1. Login to dbt cloud
+2. Go to project
+3. Make sure it's connected to dbt folder in Github repo
+4. Run:
+     - dbt run
+     - dbt test
+
+**Or if you have dbt Core installed:**
 ```bash
 cd dbt
+dbr init
 dbt run
 dbt test
 ```
+It's possible I left things out through this method since I went the Cloud route.
 
 ## Project Structure
 
@@ -161,17 +182,32 @@ spotify-podcast-pipeline/
 │   │   └── marts/
 │   ├── dbt_project.yml
 │   └── README.md
+├── prefect/
+     ├── orchestration.py
 ├── requirements.txt
 └── README.md
 ```
 
+## Dashboard
+[Spotify Podcast Popularity Dashboard](https://lookerstudio.google.com/reporting/b6e24452-e17c-4632-b995-b49394179f95/page/YhZtF)
+
 ## Limitations & Known Issues
 
-- Getting genre data for podcasts was not as straightforward as I'd thought. Given my proficiency with Python and the timeline of this project, I prioritized a solution that felt economically viable long-term and showed results immediately. Basically ListenNotes doesn't make it easy to pull info on a free-tier membership (fair), so I needed to pivot.
-- iTunes API rate limiting means show genre enrichment is incremental — shows are enriched in batches of 100 in order to make sure shows that have info pulled are updated before running into rate limits. Shows not yet enriched default to null genre values in the dashboard so won't be included until the script is run again. Shows that aren't found are labeled as such, so if they later have info added to iTunes, they won't be added into the data as the code currently exists.
-- The Kaggle dataset starts in 2024 so trend analysis is limited to just over a year of data. So popular podcasts that ended before Sept 2024 (e.g. Reply All) unfortunately won't be included unless they have an old episode resurge.
-- Some show names with special characters or emojis may not match correctly in the iTunes API lookup, resulting in missing genre data for those shows. The function I have that cleans name may not be able to capture edge cases.
+- At the moment I can only pull total episodes for a podcast and not just episodes released within the timespan of my data.
+Ideally I'd be able to include the rate of episodes that  charted within the timespan as an indicator of a podcast's quality.
+- Getting genre data for podcasts was not as straightforward as I'd thought. Given my proficiency with Python and the timeline
+of this project, I prioritized a solution that felt economically viable long-term and showed results immediately. Basically
+ListenNotes doesn't make it easy to pull info on a free-tier membership (fair), so I needed to pivot.
+- iTunes API rate limiting means show genre enrichment is incremental — shows are enriched in batches of 100 in order to make
+sure shows that have info pulled are updated before running into rate limits. Shows not yet enriched default to null genre values
+in the dashboard so won't be included until the script is run again. Shows that aren't found are labeled as such, so if they later
+have info added to iTunes, they won't be added into the data as the code currently exists.
+- The Kaggle dataset starts in 2024 so trend analysis is limited to just over a year of data. So popular podcasts that ended before
+Sept 2024 (e.g. Reply All) unfortunately won't be included unless they have an old episode resurge.
+- Some show names with special characters or emojis may not match correctly in the iTunes API lookup, resulting in missing genre data
+for those shows. The function I have that cleans name may not be able to capture edge cases.
 - A podcast that has an episode do well in multiple regions/countries, will show up multiple times in the top episodes
 table. Unless filtered down to a single country/region, if a timespan is long enough, the table can get overwhelming
 and not as useful as intended.
-- As mentioned at the top, these are for podcasts that are available in English, as I am a native speaker and designed this with my own personal use given the constraints on getting genre data. Ideally it would be possible to have language as a filter as well (maybe someday?)
+- As mentioned at the top, these are for podcasts that are available in English, as I am a native speaker and designed this with my own
+personal use given the constraints on getting genre data. Ideally it would be possible to have language as a filter as well (maybe someday?)
